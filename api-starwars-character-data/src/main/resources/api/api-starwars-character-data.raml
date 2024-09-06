@@ -1,0 +1,34 @@
+#%RAML 1.0
+title: api-starwars-character-data
+description: API Starwars gets data of the charateres of Starwars from SWAPI CSV format
+version: 1.0
+
+traits:
+  client-id-required:
+    headers:
+      client_id:
+        type: string
+      client_secret:
+        type: string
+  responses: !include traits/responses.raml
+
+types:
+  parsonajeRespons: 
+    type: string
+    example: !include example/personaje-response-example.csv
+              
+/personajes:
+  is: [client-id-required]
+  get:
+    queryParameters:
+      genero:
+        type: string
+        required: false
+        displayName: Genero del personaje
+        description: Genero por el cual se desea filtrar los datos
+    responses:
+      200:
+        body:
+          aplication/csv:
+            type: parsonajeRespons
+    is: [responses]
