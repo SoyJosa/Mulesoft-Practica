@@ -1,0 +1,61 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<mule xmlns:http="http://www.mulesoft.org/schema/mule/http" xmlns:ee="http://www.mulesoft.org/schema/mule/ee/core"
+	xmlns="http://www.mulesoft.org/schema/mule/core"
+	xmlns:doc="http://www.mulesoft.org/schema/mule/documentation" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://www.mulesoft.org/schema/mule/core http://www.mulesoft.org/schema/mule/core/current/mule.xsd
+http://www.mulesoft.org/schema/mule/ee/core http://www.mulesoft.org/schema/mule/ee/core/current/mule-ee.xsd
+http://www.mulesoft.org/schema/mule/http http://www.mulesoft.org/schema/mule/http/current/mule-http.xsd">
+	<sub-flow name="api-starwars-character-impl-SubFlow" doc:id="388e9902-660b-4118-b27e-68b56a62ebed" >
+		<logger level="INFO" doc:name="Start Process" doc:id="aa5e7eac-8718-447c-9f2c-6dfbd663dcae" message='#[%dw 2.0&#10;&#10;output application/json&#10;---&#10;{&#10;	"query": attributes.queryParams.genero default "none",&#10;	"message": "Iniciando proceso de consulta"&#10;}]'/>
+		<set-variable value="#[attributes.queryParams.genero default null]" doc:name="Set Variable" doc:id="99ab9ca5-f56e-45dd-b73f-ee519a7fd3f8" variableName="genero"/>
+		<http:request method="${https.method}" doc:name="Request" doc:id="ec2a30d4-60ff-44ac-b2f8-56180b209dba" config-ref="HTTP_Request_SWAPI" path="${https.path}"/>
+		<choice doc:name="Choice" doc:id="79e18c93-5fcf-43b3-9cf8-6be856b34c6f" >
+			<when expression="#[vars.genero != null]">
+				<ee:transform doc:name="Filte by gender" doc:id="358154dd-8b99-4c9d-bdff-0baffbda3867" >
+					<ee:message >
+						<ee:set-payload ><![CDATA[%dw 2.0
+
+var list = payload.results map ((item, index) -> {
+  name: item.name,
+  height: item.heught,
+  mass: item.mass,
+  hair_color: item.hair_color,
+  skin_color: item.skin_color,
+  eye_color: item.eye_color,
+  birth_year: item.birth_year,
+  gender: item.gender
+})
+
+output application/csv quoteValues=true, header=true
+
+---
+
+list filter ((item, index) -> item.gender ==  vars.genero )]]></ee:set-payload>
+					</ee:message>
+				</ee:transform>
+				<logger level="INFO" doc:name="Log Filter" doc:id="5d62b54b-ade5-4b39-b17d-e69631a99b3d" message='#[%dw 2.0&#10;&#10;output application/json&#10;---&#10;{&#10;	"query": attributes.queryParams.genero default "none",&#10;	"message": "Filtro aplicado"&#10;}]'/>
+			</when>
+			<otherwise>
+				<ee:transform doc:name="without filter" doc:id="247554c4-b950-477b-8531-000a425da984">
+			<ee:message>
+				<ee:set-payload><![CDATA[%dw 2.0
+
+output application/csv quoteValues=true, header=true
+---
+payload.results map ((item, index) -> {
+  name: item.name,
+  height: item.heught,
+  mass: item.mass,
+  hair_color: item.hair_color,
+  skin_color: item.skin_color,
+  eye_color: item.eye_color,
+  birth_year: item.birth_year,
+  gender: item.gender
+})]]></ee:set-payload>
+			</ee:message>
+		</ee:transform>
+			</otherwise>
+		</choice>
+		<logger level="INFO" doc:name="End Process" doc:id="83a4d3bc-593c-492f-874d-efdb732cf1ee" message='#[%dw 2.0&#10;&#10;output application/json&#10;---&#10;{&#10;	"payload": payload,&#10;	"genero": vars.genero,&#10;	"message": "Consulta concluida con exito"&#10;}]'/>
+	</sub-flow>
+</mule>
